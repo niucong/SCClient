@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<litepal>
+    <dbname value="jldata-pgs"/>
+    <version value="1"/> <!--2019-04-28-->
+
+    <!--think database-->
+    <list>
+        <mapping class="com.ionicframework.starter.db.MainStoreDB"/>
+
+        <mapping class="com.ionicframework.starter.db.StoreSaleListDetailDB"/>
+        <mapping class="com.ionicframework.starter.db.MainSkuDB"/>
+        <mapping class="com.ionicframework.starter.db.SkuPromotionDB"/>
+        <mapping class="com.ionicframework.starter.db.StoreSaleListDB"/>
+        <mapping class="com.ionicframework.starter.db.StoreSaleListHistoryDetailDB"/>
+        <mapping class="com.ionicframework.starter.db.StoreReturnListDB"/>
+
+        <mapping class="com.ionicframework.starter.db.VipIntegralDB"/>
+        <mapping class="com.ionicframework.starter.db.VipMemberDB"/>
+
+    </list>
+
+</litepal>

@@ -1,54 +1,769 @@
 package com.niucong.scclient;
 
+import android.Manifest;
+import android.content.Intent;
 import android.os.Bundle;
-import android.view.Menu;
+import android.os.Handler;
+import android.os.Message;
+import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.widget.DividerItemDecoration;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
+import android.util.Log;
+import android.view.KeyEvent;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.CheckBox;
+import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.TextView;
 
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import com.google.android.material.snackbar.Snackbar;
+import com.niucong.scclient.db.DrugInfoDB;
+import com.niucong.scclient.db.SellRecord;
+import com.niucong.scclient.util.BluetoothChatService;
+import com.niucong.scclient.util.FileUtil;
+import com.niucong.scclient.util.NiftyDialogBuilder;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
+import org.litepal.LitePal;
 
-public class MainActivity extends AppCompatActivity {
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
+public class MainActivity extends BasicActivity
+        implements NavigationView.OnNavigationItemSelectedListener {
+    private String TAG = "MainActivity";
+
+    private RecyclerView mRecyclerView;
+    private TextView tv_total, nav_title, nav_total, nav_warn;// , nav_time
+    private CheckBox cb;
+
+    private List<SellRecord> uRecords;
+    private HomeAdapter mAdapter;
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        bluetoothChatService.stop();
+        android.os.Process.killProcess(android.os.Process.myPid());
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = findViewById(R.id.toolbar);
+//        MobclickAgent.onEvent(this, "0");
+
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+        View headerView = navigationView.getHeaderView(0);
+        nav_title = (TextView) headerView.findViewById(R.id.nav_title);
+        nav_total = (TextView) headerView.findViewById(R.id.nav_total);
+        nav_warn = (TextView) headerView.findViewById(R.id.nav_warn);
+
+        mRecyclerView = (RecyclerView) findViewById(R.id.main_rv);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.setAdapter(mAdapter = new HomeAdapter());
+        mRecyclerView.addItemDecoration(new DividerItemDecoration(this,
+                DividerItemDecoration.VERTICAL));
+
+        App.app.list = LitePal.findAll(DrugInfoDB.class);
+        setSearchBar(this, true);
+        uRecords = new ArrayList<>();
+
+        cb = (CheckBox) findViewById(R.id.main_print);
+        cb.setVisibility(View.VISIBLE);
+        tv_total = (TextView) findViewById(R.id.main_total);
+        findViewById(R.id.main_btn).setOnClickListener(this);
+        mRecyclerView.requestFocus();
+
+//        connection();
+//        registerReceiver(mBroadcastReceiver, new IntentFilter(GpCom.ACTION_DEVICE_REAL_STATUS));
+
+        et_search.setOnKeyListener(new View.OnKeyListener() {
             @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if (KeyEvent.ACTION_DOWN == event.getAction()) {
+//                    Log.d(TAG, "onCreate keyCode=" + keyCode);
+                    if (KeyEvent.KEYCODE_ENTER == keyCode) {
+                        if (TextUtils.isEmpty(et_search.getText().toString())) {
+                            //处理事件
+                            sendOrder();
+                            return true;
+                        }
+                    } else if (keyCode == 111) {
+                        mAdapter.notifyDataSetChanged();
+                        tv_total.setText("合计：0.0");
+                        return true;
+                    }
+                }
+                return false;
             }
         });
+
+        // 开启蓝牙服务
+        bluetoothChatService = BluetoothChatService.getInstance(handler);
+        bluetoothChatService.start();
     }
 
     @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+    protected void onStart() {
+        super.onStart();
+        setNavTip();
+        if (App.app.refresh) {
+            App.app.refresh = false;
+            setSearchBar(this, true);
+        }
+    }
+
+    private void setNavTip() {
+//        nav_total.setText("今日销售额：" + app.showPrice(total));
+//        nav_warn.setText(warn + " 种需要进货");
+        nav_title.setText(getText(R.string.app_name));
+    }
+
+//    @Override
+//    public boolean onKeyDown(int keyCode, KeyEvent event) {
+//        if (keyCode == KeyEvent.KEYCODE_BACK) {
+//            return true;
+//        }
+//        return super.onKeyDown(keyCode, event);
+//    }
+
+    @Override
+    public void onClick(View v) {
+        super.onClick(v);
+        switch (v.getId()) {
+            case R.id.main_btn:
+                // 结算
+                sendOrder();
+                break;
+        }
+    }
+
+    private void sendOrder() {
+        mAdapter.notifyDataSetChanged();
+        tv_total.setText("合计：0.0");
+        Snackbar.make(mRecyclerView, "结算成功", Snackbar.LENGTH_LONG)
+                .setAction("Action", null).show();
+        if (cb.isChecked()) {
+            // TODO
+//            PrintUtil.printStick(mGpService, sRecords);
+            cb.setChecked(false);
+        }
+    }
+
+    @Override
+    protected boolean searchDrug(String result) {
+        Log.d(TAG, "searchDrug code=" + result);
+        if (TextUtils.isEmpty(result)) {
+//            Snackbar.make(tv_total, "条形码输入错误", Snackbar.LENGTH_LONG)
+//                    .setAction("Action", null).show();
+            return false;
+        }
+        DrugInfoDB drugInfoDB = LitePal.where("barCode = ?", result).findFirst(DrugInfoDB.class);
+        if (drugInfoDB != null) {
+            SellRecord sr = null;
+            long c = drugInfoDB.getBarCode();
+            if (uRecords.size() > 0) {
+                for (SellRecord uRecord : uRecords) {
+                    if (c == uRecord.getBarCode()) {
+                        sr = uRecord;
+                        break;
+                    }
+                }
+            }
+            if (sr == null) {
+                sr = new SellRecord();
+                sr.setBarCode(drugInfoDB.getBarCode());
+                sr.setName(drugInfoDB.getName());
+                sr.setFactory(drugInfoDB.getFactory());
+                sr.setPrice(drugInfoDB.getPrice());
+                sr.setNumber(1);
+            } else {
+                sr.setNumber(sr.getNumber() + 1);
+                uRecords.remove(sr);
+            }
+            uRecords.add(0, sr);
+            mAdapter.notifyDataSetChanged();
+            getTotalPrice();
+//            et_search.setText("");
+//            mRecyclerView.requestFocus();
+            return true;
+        } else {
+            Snackbar.make(mRecyclerView, "该药品不在库存中,请先添加入库", Snackbar.LENGTH_LONG)
+                    .setAction("Action", null).show();
+        }
+        return false;
+    }
+
+    private void getTotalPrice() {
+        int total = 0;
+        for (SellRecord di : uRecords) {
+            total += di.getPrice() * di.getNumber();
+        }
+        tv_total.setText("合计：" + App.app.showPrice(total));
+    }
+
+    class HomeAdapter extends RecyclerView.Adapter<HomeAdapter.MyViewHolder> {
+        @Override
+        public MyViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            MyViewHolder holder = new MyViewHolder(LayoutInflater.from(MainActivity.this).inflate(R.layout.item_home, parent, false));
+            return holder;
+        }
+
+        @Override
+        public void onBindViewHolder(final MyViewHolder holder, final int position) {
+            final SellRecord sr = uRecords.get(position);
+            final long code = sr.getBarCode();
+            holder.tv_code.setText("" + code);
+            holder.tv_price.setText(App.app.showPrice(sr.getPrice()));
+            holder.tv_num.setText("" + sr.getNumber());
+            holder.tv_subPrice.setText("小计：" + App.app.showPrice(sr.getPrice() * sr.getNumber()));
+
+            holder.tv_name.setText(sr.getName());
+            holder.tv_factory.setText(sr.getFactory());
+
+//            holder.tv_price.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//
+//                    final NiftyDialogBuilder submitDia = NiftyDialogBuilder.getInstance(MainActivity.this);
+//                    final EditText et = new EditText(MainActivity.this);
+//                    et.setBackgroundResource(0);
+//                    et.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL);
+//                    et.setGravity(Gravity.CENTER);
+//                    et.setText(App.app.showPrice(sr.getPrice()));
+//
+//                    submitDia.withTitle("调整价格");
+//                    submitDia.withButton1Text("取消", 0).setButton1Click(new View.OnClickListener() {
+//                        @Override
+//                        public void onClick(View v) {
+//                            submitDia.dismiss();
+//                        }
+//                    });
+//                    submitDia.withButton2Text("确定", 0).setButton2Click(new View.OnClickListener() {
+//                        @Override
+//                        public void onClick(View v) {
+//                            int price = App.app.savePrice(et.getText().toString());
+//                            if (price == 0) {
+//                                Snackbar.make(mRecyclerView, "价格输入有误", Snackbar.LENGTH_LONG)
+//                                        .setAction("Action", null).show();
+//                            } else {
+//                                sr.setPrice(price);
+//                                uRecords.remove(position);
+//                                uRecords.add(position, sr);
+//                                holder.tv_price.setText(App.app.showPrice(sr.getPrice()));
+//                                holder.tv_subPrice.setText("小计：" + App.app.showPrice(sr.getPrice() * sr.getNumber()));
+//                                getTotalPrice();
+//                                submitDia.dismiss();
+//                            }
+//                        }
+//                    });
+//                    submitDia.setCustomView(et, MainActivity.this);// "请选择查询日期"
+//                    submitDia.withMessage(null).withDuration(400);
+//                    submitDia.isCancelable(false);
+//                    submitDia.show();
+//                }
+//            });
+
+            holder.iv_delete.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    uRecords.remove(sr);
+                    notifyDataSetChanged();
+                    getTotalPrice();
+                }
+            });
+
+            holder.tv_remove.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int num = sr.getNumber();
+                    if (num > 1) {
+                        sr.setNumber(num - 1);
+                        notifyDataSetChanged();
+                        getTotalPrice();
+                    }
+                }
+            });
+
+            holder.tv_add.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    int num = sr.getNumber();
+                    sr.setNumber(num + 1);
+                    notifyDataSetChanged();
+                    getTotalPrice();
+                }
+            });
+        }
+
+        @Override
+        public int getItemCount() {
+            return uRecords.size();
+        }
+
+        class MyViewHolder extends RecyclerView.ViewHolder {
+            TextView tv_name, tv_code, tv_factory, tv_price, tv_num, tv_remove, tv_add, tv_subPrice;
+            ImageView iv_delete;
+
+            public MyViewHolder(View view) {
+                super(view);
+                tv_name = (TextView) view.findViewById(R.id.item_home_name);
+                tv_code = (TextView) view.findViewById(R.id.item_home_code);
+                tv_factory = (TextView) view.findViewById(R.id.item_home_factory);
+                tv_price = (TextView) view.findViewById(R.id.item_home_pirce);
+                tv_num = (TextView) view.findViewById(R.id.item_home_num);
+                tv_remove = (TextView) view.findViewById(R.id.item_home_remove);
+                tv_add = (TextView) view.findViewById(R.id.item_home_add);
+                tv_subPrice = (TextView) view.findViewById(R.id.item_home_subPrice);
+
+                iv_delete = (ImageView) view.findViewById(R.id.item_home_delete);
+            }
+        }
+    }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
+
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
+        if (id == R.id.nav_drug) {// 查看药品
+            startActivity(new Intent(this, DrugListActivity.class));
+        } else if (id == R.id.nav_connet) {// 设置连接方式：wifi/蓝牙
+            settingDialog(0);
+        } else if (id == R.id.nav_sysn) {// 同步数据
+            // TODO
+        } else if (id == R.id.nav_data) {// 导入/导出数据
+            //6.0运行权限设置
+            if (!FileUtil.setPermission(MainActivity.this, MainActivity.this, Manifest
+                    .permission.READ_EXTERNAL_STORAGE, 1) || !FileUtil.setPermission(MainActivity.this, MainActivity.this, Manifest
+                    .permission.WRITE_EXTERNAL_STORAGE, 1)) {
+                settingDialog(1);
+            }
+        } else if (id == R.id.nav_printer) {// 连接打印机
+//            if (mGpService == null) {
+//                Toast.makeText(this, "Print Service is not start, please check it", Toast.LENGTH_SHORT).show();
+//            } else {
+//                Intent intent = new Intent(this, PrinterConnectDialog.class);
+//                boolean[] state = getConnectState();
+//                intent.putExtra("connect.status", state);
+//                this.startActivity(intent);
+//            }
+        }
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
         return true;
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[]
+            grantResults) {
+        if (requestCode == 1) {
+            settingDialog(1);
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+    /**
+     * 设置对话框：0设置连接方式、1导入/导出数据
+     *
+     * @param type
+     */
+    private void settingDialog(final int type) {
+        final NiftyDialogBuilder submitDia = NiftyDialogBuilder.getInstance(this);
+        View settingView = LayoutInflater.from(this).inflate(R.layout.dialog_setting, null);
+        final RadioButton rb1 = (RadioButton) settingView.findViewById(R.id.radioButton1);
+        RadioButton rb2 = (RadioButton) settingView.findViewById(R.id.radioButton2);
+        final EditText et_ip = (EditText) settingView.findViewById(R.id.et_ip);
+
+        //Environment.getExternalStorageDirectory();// /storage/usbotg、/storage/081C-9F49
+        final String SDCardPath = App.app.share.getStringMessage("SC", "USBPath", "/storage/usbotg") + File.separator;
+
+        if (type == 0) {
+            submitDia.withTitle("选择连接方式");
+            if (App.app.share.getIntMessage("SC", "ConnetType", 0) == 0) {
+                rb1.setChecked(true);
+            } else {
+                rb2.setChecked(true);
+            }
+            ((RadioGroup) settingView.findViewById(R.id.radioGroup)).setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(RadioGroup group, int checkedId) {
+                    switch (checkedId) {
+                        case R.id.radioButton1:
+                            et_ip.setVisibility(View.INVISIBLE);
+                            break;
+                        case R.id.radioButton2:
+                            et_ip.setVisibility(View.VISIBLE);
+                            break;
+                    }
+                }
+            });
+        } else {
+            submitDia.withTitle("导入/导出数据");
+            rb1.setText("导入数据");
+            rb2.setText("导出数据");
+            final TextView tv_tip = (TextView) settingView.findViewById(R.id.dialog_tip);
+            tv_tip.setVisibility(View.VISIBLE);
+            tv_tip.setText("请确保" + SDCardPath + "目录下有shunchang文件，同时应用内数据将被覆盖！");
+            ((RadioGroup) settingView.findViewById(R.id.radioGroup)).setOnCheckedChangeListener(new RadioGroup.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(RadioGroup group, int checkedId) {
+                    switch (checkedId) {
+                        case R.id.radioButton1:
+                            tv_tip.setText("请确保" + SDCardPath + "目录下有shunchang文件，同时应用内数据将被覆盖！");
+                            break;
+                        case R.id.radioButton2:
+                            tv_tip.setText("数据将导出到" + SDCardPath + "目录下");
+                            break;
+                    }
+                }
+            });
+            submitDia.withButton1Text("取消", 0).setButton1Click(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    submitDia.dismiss();
+                }
+            });
         }
 
-        return super.onOptionsItemSelected(item);
+        submitDia.withButton2Text("确定", 0).setButton2Click(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (type == 0) {
+                    if (rb1.isChecked()) {
+                        App.app.share.saveIntMessage("SC", "ConnetType", 0);
+                        Snackbar.make(mRecyclerView, "已选择蓝牙连接", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    } else {
+                        App.app.share.saveIntMessage("SC", "ConnetType", 1);
+                        Snackbar.make(mRecyclerView, "已选择Wifi连接", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                    }
+                } else {
+                    if (rb1.isChecked()) {
+//                        File f = new File(SDCardPath + "shunchang");
+//                        if (f.exists()) {
+                        Snackbar.make(mRecyclerView, "正在导入数据", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                        new Thread() {
+                            @Override
+                            public void run() {
+                                final boolean flag = new FileUtil().copySDcradToDB(MainActivity.this, SDCardPath);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (flag) {
+                                            Snackbar.make(mRecyclerView, "数据导入成功", Snackbar.LENGTH_LONG)
+                                                    .setAction("Action", null).show();
+                                        } else {
+                                            Snackbar.make(mRecyclerView, "数据导入失败", Snackbar.LENGTH_LONG)
+                                                    .setAction("Action", null).show();
+                                        }
+                                    }
+                                });
+                            }
+                        }.start();
+//                        } else {
+//                            Snackbar.make(mRecyclerView, "所导入的数据文件不存在", Snackbar.LENGTH_LONG)
+//                                    .setAction("Action", null).show();
+//                        }
+                    } else {
+                        Snackbar.make(mRecyclerView, "正在导出数据", Snackbar.LENGTH_LONG)
+                                .setAction("Action", null).show();
+                        new Thread() {
+                            @Override
+                            public void run() {
+                                final boolean flag = new FileUtil().copyDBToSDcrad(MainActivity.this, SDCardPath);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        if (flag) {
+                                            Snackbar.make(mRecyclerView, "数据导出成功", Snackbar.LENGTH_LONG)
+                                                    .setAction("Action", null).show();
+                                        } else {
+                                            Snackbar.make(mRecyclerView, "数据导出失败", Snackbar.LENGTH_LONG)
+                                                    .setAction("Action", null).show();
+                                        }
+                                    }
+                                });
+                            }
+                        }.start();
+                    }
+                }
+                submitDia.dismiss();
+            }
+        });
+        submitDia.setCustomView(settingView, this);
+        submitDia.withMessage(null).withDuration(400);
+        submitDia.isCancelable(false);
+        submitDia.show();
     }
+
+//    private GpService mGpService = null;
+//    private PrinterServiceConnection conn = null;
+//
+//    private int mPrinterIndex = 0;
+//    private static final int MAIN_QUERY_PRINTER_STATUS = 0xfe;
+//    private static final int REQUEST_PRINT_LABEL = 0xfd;
+//    private static final int REQUEST_PRINT_RECEIPT = 0xfc;
+//
+//    class PrinterServiceConnection implements ServiceConnection {
+//        @Override
+//        public void onServiceDisconnected(ComponentName name) {
+//            Log.i("ServiceConnection", "onServiceDisconnected() called");
+//            mGpService = null;
+//        }
+//
+//        @Override
+//        public void onServiceConnected(ComponentName name, IBinder service) {
+//            mGpService = GpService.Stub.asInterface(service);
+//        }
+//    }
+//
+//    private BroadcastReceiver mBroadcastReceiver = new BroadcastReceiver() {
+//        @Override
+//        public void onReceive(Context context, Intent intent) {
+//            String action = intent.getAction();
+//
+//            // GpCom.ACTION_DEVICE_REAL_STATUS 为广播的IntentFilter
+//            if (action.equals(GpCom.ACTION_DEVICE_REAL_STATUS)) {
+//
+//                // 业务逻辑的请求码，对应哪里查询做什么操作
+//                int requestCode = intent.getIntExtra(GpCom.EXTRA_PRINTER_REQUEST_CODE, -1);
+//                // 判断请求码，是则进行业务操作
+//                if (requestCode == MAIN_QUERY_PRINTER_STATUS) {
+//
+//                    int status = intent.getIntExtra(GpCom.EXTRA_PRINTER_REAL_STATUS, 16);
+//                    String str;
+//                    if (status == GpCom.STATE_NO_ERR) {
+//                        str = "打印机正常";
+//                    } else {
+//                        str = "打印机 ";
+//                        if ((byte) (status & GpCom.STATE_OFFLINE) > 0) {
+//                            str += "脱机";
+//                        }
+//                        if ((byte) (status & GpCom.STATE_PAPER_ERR) > 0) {
+//                            str += "缺纸";
+//                        }
+//                        if ((byte) (status & GpCom.STATE_COVER_OPEN) > 0) {
+//                            str += "打印机开盖";
+//                        }
+//                        if ((byte) (status & GpCom.STATE_ERR_OCCURS) > 0) {
+//                            str += "打印机出错";
+//                        }
+//                        if ((byte) (status & GpCom.STATE_TIMES_OUT) > 0) {
+//                            str += "查询超时";
+//                        }
+//                    }
+//
+//                    Toast.makeText(getApplicationContext(), "打印机：" + mPrinterIndex + " 状态：" + str, Toast.LENGTH_SHORT)
+//                            .show();
+//                } else if (requestCode == REQUEST_PRINT_LABEL) {
+//                    int status = intent.getIntExtra(GpCom.EXTRA_PRINTER_REAL_STATUS, 16);
+//                    if (status == GpCom.STATE_NO_ERR) {
+//                        sendLabel();
+//                    } else {
+//                        Toast.makeText(MainActivity.this, "query printer status error", Toast.LENGTH_SHORT).show();
+//                    }
+//                } else if (requestCode == REQUEST_PRINT_RECEIPT) {
+//                    int status = intent.getIntExtra(GpCom.EXTRA_PRINTER_REAL_STATUS, 16);
+//                    if (status == GpCom.STATE_NO_ERR) {
+//                        sendReceipt();
+//                    } else {
+//                        Toast.makeText(MainActivity.this, "query printer status error", Toast.LENGTH_SHORT).show();
+//                    }
+//                }
+//            }
+//        }
+//    };
+//
+//    void sendLabel() {
+//        LabelCommand tsc = new LabelCommand();
+//        tsc.addSize(60, 60); // 设置标签尺寸，按照实际尺寸设置
+//        tsc.addGap(0); // 设置标签间隙，按照实际尺寸设置，如果为无间隙纸则设置为0
+//        tsc.addDirection(LabelCommand.DIRECTION.BACKWARD, LabelCommand.MIRROR.NORMAL);// 设置打印方向
+//        tsc.addReference(0, 0);// 设置原点坐标
+//        tsc.addTear(EscCommand.ENABLE.ON); // 撕纸模式开启
+//        tsc.addCls();// 清除打印缓冲区
+//        // 绘制简体中文
+//        tsc.addText(20, 20, LabelCommand.FONTTYPE.SIMPLIFIED_CHINESE, LabelCommand.ROTATION.ROTATION_0, LabelCommand.FONTMUL.MUL_1, LabelCommand.FONTMUL.MUL_1,
+//                "Welcome to use SMARNET printer!");
+//        // 绘制图片
+//        Bitmap b = BitmapFactory.decodeResource(getResources(), R.drawable.gprinter);
+//        tsc.addBitmap(20, 50, LabelCommand.BITMAP_MODE.OVERWRITE, b.getWidth(), b);
+//
+//        tsc.addQRCode(250, 80, LabelCommand.EEC.LEVEL_L, 5, LabelCommand.ROTATION.ROTATION_0, " www.smarnet.cc");
+//        // 绘制一维条码
+//        tsc.add1DBarcode(20, 250, LabelCommand.BARCODETYPE.CODE128, 100, LabelCommand.READABEL.EANBEL, LabelCommand.ROTATION.ROTATION_0, "SMARNET");
+//        tsc.addPrint(1, 1); // 打印标签
+//        tsc.addSound(2, 100); // 打印标签后 蜂鸣器响
+//        tsc.addCashdrwer(LabelCommand.FOOT.F5, 255, 255);
+//        Vector<Byte> datas = tsc.getCommand(); // 发送数据
+//        byte[] bytes = GpUtils.ByteTo_byte(datas);
+//        String str = Base64.encodeToString(bytes, Base64.DEFAULT);
+//        int rel;
+//        try {
+//            rel = mGpService.sendLabelCommand(mPrinterIndex, str);
+//            GpCom.ERROR_CODE r = GpCom.ERROR_CODE.values()[rel];
+//            if (r != GpCom.ERROR_CODE.SUCCESS) {
+//                Toast.makeText(getApplicationContext(), GpCom.getErrorText(r), Toast.LENGTH_SHORT).show();
+//            }
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    void sendReceipt() {
+//        EscCommand esc = new EscCommand();
+//        esc.addInitializePrinter();
+//        esc.addPrintAndFeedLines((byte) 3);
+//        esc.addSelectJustification(EscCommand.JUSTIFICATION.CENTER);// 设置打印居中
+//        esc.addSelectPrintModes(EscCommand.FONT.FONTA, EscCommand.ENABLE.OFF, EscCommand.ENABLE.ON, EscCommand.ENABLE.ON, EscCommand.ENABLE.OFF);// 设置为倍高倍宽
+//        esc.addText("Sample\n"); // 打印文字
+//        esc.addPrintAndLineFeed();
+//
+//        /* 打印文字 */
+//        esc.addSelectPrintModes(EscCommand.FONT.FONTA, EscCommand.ENABLE.OFF, EscCommand.ENABLE.OFF, EscCommand.ENABLE.OFF, EscCommand.ENABLE.OFF);// 取消倍高倍宽
+//        esc.addSelectJustification(EscCommand.JUSTIFICATION.LEFT);// 设置打印左对齐
+//        esc.addText("Print text\n"); // 打印文字
+//        esc.addText("Welcome to use SMARNET printer!\n"); // 打印文字
+//
+//        /* 打印繁体中文 需要打印机支持繁体字库 */
+//        String message = "佳博智匯票據打印機\n";
+//        // esc.addText(message,"BIG5");
+//        esc.addText(message, "GB2312");
+//        esc.addPrintAndLineFeed();
+//
+//        /* 绝对位置 具体详细信息请查看GP58编程手册 */
+//        esc.addText("智汇");
+//        esc.addSetHorAndVerMotionUnits((byte) 7, (byte) 0);
+//        esc.addSetAbsolutePrintPosition((short) 6);
+//        esc.addText("网络");
+//        esc.addSetAbsolutePrintPosition((short) 10);
+//        esc.addText("设备");
+//        esc.addPrintAndLineFeed();
+//
+//        /* 打印图片 */
+//        // esc.addText("Print bitmap!\n"); // 打印文字
+//        // Bitmap b = BitmapFactory.decodeResource(getResources(),
+//        // R.drawable.gprinter);
+//        // esc.addRastBitImage(b, b.getWidth(), 0); // 打印图片
+//
+//        /* 打印一维条码 */
+//        esc.addText("Print code128\n"); // 打印文字
+//        esc.addSelectPrintingPositionForHRICharacters(EscCommand.HRI_POSITION.BELOW);//
+//        // 设置条码可识别字符位置在条码下方
+//        esc.addSetBarcodeHeight((byte) 60); // 设置条码高度为60点
+//        esc.addSetBarcodeWidth((byte) 1); // 设置条码单元宽度为1
+//        esc.addCODE128(esc.genCodeB("SMARNET")); // 打印Code128码
+//        esc.addPrintAndLineFeed();
+//
+//        /*
+//         * QRCode命令打印 此命令只在支持QRCode命令打印的机型才能使用。 在不支持二维码指令打印的机型上，则需要发送二维条码图片
+//         */
+//        esc.addText("Print QRcode\n"); // 打印文字
+//        esc.addSelectErrorCorrectionLevelForQRCode((byte) 0x31); // 设置纠错等级
+//        esc.addSelectSizeOfModuleForQRCode((byte) 3);// 设置qrcode模块大小
+//        esc.addStoreQRCodeData("www.smarnet.cc");// 设置qrcode内容
+//        esc.addPrintQRCode();// 打印QRCode
+//        esc.addPrintAndLineFeed();
+//
+//        /* 打印文字 */
+//        esc.addSelectJustification(EscCommand.JUSTIFICATION.CENTER);// 设置打印左对齐
+//        esc.addText("Completed!\r\n"); // 打印结束
+//        esc.addGeneratePlus(LabelCommand.FOOT.F5, (byte) 255, (byte) 255);
+//        // esc.addGeneratePluseAtRealtime(LabelCommand.FOOT.F2, (byte) 8);
+//
+//        esc.addPrintAndFeedLines((byte) 8);
+//
+//        Vector<Byte> datas = esc.getCommand(); // 发送数据
+//        byte[] bytes = GpUtils.ByteTo_byte(datas);
+//        String sss = Base64.encodeToString(bytes, Base64.DEFAULT);
+//        int rs;
+//        try {
+//            rs = mGpService.sendEscCommand(mPrinterIndex, sss);
+//            GpCom.ERROR_CODE r = GpCom.ERROR_CODE.values()[rs];
+//            if (r != GpCom.ERROR_CODE.SUCCESS) {
+//                Toast.makeText(getApplicationContext(), GpCom.getErrorText(r), Toast.LENGTH_SHORT).show();
+//            }
+//        } catch (RemoteException e) {
+//            e.printStackTrace();
+//        }
+//    }
+//
+//    private void connection() {
+//        conn = new PrinterServiceConnection();
+//        Intent intent = new Intent(this, GpPrintService.class);
+//        bindService(intent, conn, Context.BIND_AUTO_CREATE); // bindService
+//    }
+//
+//    public boolean[] getConnectState() {
+//        boolean[] state = new boolean[GpPrintService.MAX_PRINTER_CNT];
+//        for (int i = 0; i < GpPrintService.MAX_PRINTER_CNT; i++) {
+//            state[i] = false;
+//        }
+//        for (int i = 0; i < GpPrintService.MAX_PRINTER_CNT; i++) {
+//            try {
+//                if (mGpService.getPrinterConnectStatus(i) == GpDevice.STATE_CONNECTED) {
+//                    state[i] = true;
+//                }
+//            } catch (RemoteException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        return state;
+//    }
+
+    private BluetoothChatService bluetoothChatService;
+    private Handler handler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case BluetoothChatService.BLUE_TOOTH_READ: {
+//                case BluetoothChatService1.MESSAGE_READ: {
+                    byte[] readBuf = (byte[]) msg.obj;
+                    String readMessage = new String(readBuf, 0, msg.arg1);
+                    bluetoothChatService.sendData("".getBytes());
+                }
+                break;
+            }
+        }
+    };
+
 }
