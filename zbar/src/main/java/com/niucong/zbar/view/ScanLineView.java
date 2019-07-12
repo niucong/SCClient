@@ -9,7 +9,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 
-import com.example.xch.scanzbar.R;
+import com.niucong.zbar.R;
 
 /**
  * desc:扫描线的滑动,打算用来替换平移动画

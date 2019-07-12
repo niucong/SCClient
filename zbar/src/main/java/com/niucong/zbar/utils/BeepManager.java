@@ -19,7 +19,7 @@ package com.niucong.zbar.utils;
 import android.content.Context;
 import android.media.MediaPlayer;
 
-import com.example.xch.scanzbar.R;
+import com.niucong.zbar.R;
 
 /**
  * Desc: 扫描滴滴声

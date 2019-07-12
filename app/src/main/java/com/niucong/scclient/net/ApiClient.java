@@ -5,6 +5,7 @@ import android.util.Log;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Headers;
 import okhttp3.Interceptor;
@@ -110,6 +111,9 @@ public class ApiClient {
         //设置 Debug Log 模式
         builder.addInterceptor(loggingInterceptor);
         builder.addNetworkInterceptor(new NetworkInterceptor(params));
+        builder.connectTimeout(60, TimeUnit.SECONDS);
+        builder.readTimeout(5 * 60, TimeUnit.SECONDS);
+        builder.writeTimeout(5 * 60, TimeUnit.SECONDS);
         OkHttpClient okHttpClient = builder.build();
         return okHttpClient;
     }

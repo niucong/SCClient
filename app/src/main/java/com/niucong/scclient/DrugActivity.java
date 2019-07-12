@@ -1,7 +1,6 @@
 package com.niucong.scclient;
 
 import android.os.Bundle;
-import android.support.design.widget.Snackbar;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
@@ -18,8 +17,6 @@ import com.niucong.scclient.util.CnToSpell;
 
 import org.litepal.LitePal;
 
-import java.text.SimpleDateFormat;
-
 //import com.umeng.analytics.MobclickAgent;
 
 public class DrugActivity extends BasicActivity {
@@ -33,8 +30,6 @@ public class DrugActivity extends BasicActivity {
     private DrugInfoDB di;// 药品信息
 
     private long barCode;
-
-    private SimpleDateFormat ymd = new SimpleDateFormat("yyyy-MM-dd");
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -134,8 +129,7 @@ public class DrugActivity extends BasicActivity {
                 String str_price = et_price.getText().toString();
 
                 if (TextUtils.isEmpty(str_name) || TextUtils.isEmpty(str_code)) {
-                    Snackbar.make(btn_send, "药品名称和条码不能为空", Snackbar.LENGTH_LONG)
-                            .setAction("Action", null).show();
+                    App.app.showToast("药品名称和条码不能为空");
                     return;
                 }
                 addDrugInfo(str_code, str_name, str_factory, str_price);
@@ -166,13 +160,11 @@ public class DrugActivity extends BasicActivity {
             di.setUpdateTime(System.currentTimeMillis());
 
             if (di.getPrice() <= 0) {
-                Snackbar.make(btn_send, "销售价格必须大于0", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                App.app.showToast("销售价格必须大于0");
                 return;
             }
         } catch (Exception e) {
-            Snackbar.make(btn_send, "药品信息输入错误", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show();
+            App.app.showToast("药品信息输入错误");
             return;
         }
 
@@ -192,8 +184,7 @@ public class DrugActivity extends BasicActivity {
         }
         clearInput();
         et_search.requestFocus();
-        Snackbar.make(btn_send, "入库成功", Snackbar.LENGTH_LONG)
-                .setAction("Action", null).show();
+        App.app.showToast("入库成功");
     }
 
     @Override

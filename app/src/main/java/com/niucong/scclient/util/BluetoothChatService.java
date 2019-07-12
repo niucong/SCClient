@@ -24,6 +24,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 
+import com.niucong.scclient.MainActivity;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -314,9 +316,13 @@ public class BluetoothChatService {
                 try {
                     bytes = in.read(buffer);
                     //TODO 分发到主线程显示
-                    uiHandler.obtainMessage(BLUE_TOOTH_READ, bytes, -1, buffer)
-                            .sendToTarget();
-                    Log.e(TAG, "run: read " + new String(buffer, 0, bytes));
+//                    uiHandler.obtainMessage(BLUE_TOOTH_READ, bytes, -1, buffer)
+//                            .sendToTarget();
+//                    Log.e(TAG, "run: read " + new String(buffer, 0, bytes));
+                    MainActivity.result += new String(buffer, 0, bytes);
+                    if (MainActivity.result.endsWith("}") && MainActivity.result.contains("code")) {
+                        uiHandler.obtainMessage(BLUE_TOOTH_READ).sendToTarget();
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                     Log.e(TAG, "run: Transform error" + e.toString());

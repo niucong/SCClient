@@ -17,10 +17,13 @@
                 android:title="同步数据"/>
             <item
                 android:id="@+id/nav_data"
-                android:title="导入/导出数据"/>
+                android:title="导出数据"/>
             <item
                 android:id="@+id/nav_printer"
                 android:title="连接打印机"/>
+            <item
+                android:id="@+id/nav_init"
+                android:title="初始备份数据"/>
         </menu>
     </item>
 

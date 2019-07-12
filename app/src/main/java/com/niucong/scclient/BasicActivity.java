@@ -5,7 +5,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -22,9 +24,18 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.niucong.scclient.db.DrugInfoDB;
+import com.niucong.scclient.net.Api;
+import com.niucong.scclient.net.ApiClient;
+import com.niucong.zbar.CaptureActivity;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import rx.Observable;
+import rx.Subscriber;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
+import rx.subscriptions.CompositeSubscription;
 
 //import com.umeng.analytics.MobclickAgent;
 
@@ -279,13 +290,14 @@ public abstract class BasicActivity extends AppCompatActivity implements View.On
 //                integrator.setCaptureActivity(ScanActivity.class);
 //                integrator.setCameraId(App.app.share.getIntMessage("SC", "CameraId", 0)); //1前置或者0后置摄像头
 //                integrator.initiateScan();
+                goScan();
                 break;
         }
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
 //        IntentResult scanResult = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
 //        if (scanResult != null) {
 //            String result = scanResult.getContents();
@@ -300,7 +312,69 @@ public abstract class BasicActivity extends AppCompatActivity implements View.On
 //        } else {
 //            super.onActivityResult(requestCode, resultCode, data);
 //        }
-    }
+//    }
 
     protected abstract boolean searchDrug(String result);
+
+
+    /**
+     * 跳转到扫码界面扫码
+     */
+    private void goScan() {
+        Intent intent = new Intent(this, CaptureActivity.class);
+        startActivityForResult(intent, 1);
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
+            case 1:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    goScan();
+                } else {
+                    App.app.showToast("你拒绝了权限申请，可能无法打开相机扫码哟！");
+                }
+                break;
+            default:
+        }
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case 1:// 二维码
+                // 扫描二维码回传
+                if (resultCode == RESULT_OK) {
+                    if (data != null) {
+                        //获取扫描结果
+                        Bundle bundle = data.getExtras();
+                        String result = bundle.getString(CaptureActivity.EXTRA_STRING);
+                        if (searchDrug(result)) {
+                            et_search.setText("");
+                        }
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private CompositeSubscription mCompositeSubscription;
+
+    public Api getApi() {
+        return ApiClient.getIstance().retrofit("http://" + App.app.share.getStringMessage("SC", "IP", "") + ":8080/sc/").create(Api.class);
+    }
+
+    public void addSubscription(Observable observable, Subscriber subscriber) {
+        if (mCompositeSubscription == null) {
+            mCompositeSubscription = new CompositeSubscription();
+        }
+        mCompositeSubscription.add(observable
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(subscriber));
+    }
 }

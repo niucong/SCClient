@@ -28,7 +28,8 @@
         </activity>
         <activity android:name=".DrugListActivity"/>
         <activity android:name=".DrugActivity"/>
-        <!--<activity android:name="com.niucong.zbar"-->
+
+        <activity android:name="com.niucong.zbar.CaptureActivity"/>
     </application>
 
 </manifest>

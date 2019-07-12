@@ -1,6 +1,7 @@
 package com.niucong.scclient;
 
 import android.app.Application;
+import android.widget.Toast;
 
 import com.facebook.stetho.Stetho;
 import com.niucong.scclient.db.DrugInfoDB;
@@ -26,6 +27,10 @@ public class App extends Application {
 
         LitePal.initialize(this);
         Stetho.initializeWithDefaults(this);
+    }
+
+    public void showToast(String msg) {
+        Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
     }
 
     /**

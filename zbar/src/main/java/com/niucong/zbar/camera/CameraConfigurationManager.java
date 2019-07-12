@@ -25,7 +25,7 @@ import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
-import com.example.xch.scanzbar.zbar.utils.Config;
+import com.niucong.zbar.utils.Config;
 
 import java.util.ArrayList;
 import java.util.Collection;

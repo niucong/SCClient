@@ -14,33 +14,24 @@
 
         <RadioButton
             android:id="@+id/radioButton1"
-            android:layout_width="wrap_content"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:checked="true"
             android:text="蓝牙连接"/>
 
         <RadioButton
             android:id="@+id/radioButton2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="wifi连接"/>
-
-        <EditText
-            android:id="@+id/et_ip"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:hint="IP地址"
-            android:visibility="invisible"/>
+            android:text="wifi连接"/>
     </RadioGroup>
 
-    <TextView
-        android:id="@+id/dialog_tip"
-        android:layout_width="wrap_content"
+    <EditText
+        android:id="@+id/et_ip"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
-        android:textColor="#88ff0000"
-        android:textSize="16sp"
-        android:visibility="gone"/>
+        android:layout_weight="1"/>
 
 </LinearLayout>

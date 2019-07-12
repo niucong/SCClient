@@ -24,7 +24,7 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.example.xch.scanzbar.zbar.utils.Config;
+import com.niucong.zbar.utils.Config;
 
 import java.util.ArrayList;
 import java.util.Collection;
