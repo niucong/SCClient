@@ -29,7 +29,7 @@ import java.util.List;
 
 public class FileUtil {
 
-    private SimpleDateFormat ymdhms = new SimpleDateFormat("yyyyMMddHHmm");
+    public static SimpleDateFormat ymdhms = new SimpleDateFormat("yyyyMMddHHmm");
 
     /**
      * 获取sd卡的路径

@@ -152,6 +152,10 @@ public class MainActivity extends BasicActivity
     private void setNavTip() {
 //        nav_total.setText("今日销售额：" + app.showPrice(total));
 //        nav_warn.setText(warn + " 种需要进货");
+        long updateTime = App.app.share.getLongMessage("SC", "updateTime", 0);
+        if (updateTime > 0) {
+            nav_total.setText("上次同步时间：" + new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(updateTime)));
+        }
 
         if (App.app.share.getIntMessage("SC", "ConnetType", 0) == 1) {
             nav_title.setText("Wifi连接 " + App.app.share.getStringMessage("SC", "IP", ""));
@@ -514,6 +518,7 @@ public class MainActivity extends BasicActivity
                 }
                 App.app.share.saveLongMessage("SC", "updateTime", System.currentTimeMillis());
                 App.app.showToast("数据同步成功");
+                setNavTip();
             } catch (Exception e) {
                 e.printStackTrace();
                 App.app.showToast("数据同步失败，返回值类型错误");
