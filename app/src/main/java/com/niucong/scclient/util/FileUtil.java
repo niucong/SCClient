@@ -4,9 +4,16 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Build;
+import android.os.Environment;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRichTextString;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +21,7 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by think on 2016/10/31.
@@ -22,6 +30,18 @@ import java.util.Date;
 public class FileUtil {
 
     private SimpleDateFormat ymdhms = new SimpleDateFormat("yyyyMMddHHmm");
+
+    /**
+     * 获取sd卡的路径
+     *
+     * @return
+     */
+    public static String getSdcardDir() {
+        if (Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED)) {
+            return Environment.getExternalStorageDirectory().toString();
+        }
+        return null;
+    }
 
     /**
      * 导出数据
@@ -143,6 +163,67 @@ public class FileUtil {
             }
         }
         return false;
+    }
+
+    /**
+     * 生成xlsx格式的表格，生成xls格式的表格只需把HSSF替换成XSSF
+     *
+     * @param workbook
+     * @param sheetNum
+     * @param sheetTitle
+     * @param headers
+     * @param result
+     * @throws Exception
+     */
+    public static void exportExcel(HSSFWorkbook workbook, int sheetNum, String sheetTitle,
+                                   String[] headers, List<List<String>> result) throws Exception {
+// 第一步，创建一个webbook，对应一个Excel以xsl为扩展名文件
+        HSSFSheet sheet = workbook.createSheet();
+        workbook.setSheetName(sheetNum, sheetTitle);
+//设置列宽度大小
+//        sheet.setDefaultColumnWidth((short) 20);
+//第二步， 生成表格第一行的样式和字体
+//        HSSFCellStyle style = workbook.createCellStyle();
+// 设置这些样式
+//        style.setFillForegroundColor(XSSFColor.PALE_BLUE.index);
+//        style.setFillPattern(XSSFCellStyle.SOLID_FOREGROUND);
+//        style.setBorderBottom(XSSFCellStyle.BORDER_THIN);
+//        style.setBorderLeft(XSSFCellStyle.BORDER_THIN);
+//        style.setBorderRight(XSSFCellStyle.BORDER_THIN);
+//        style.setBorderTop(XSSFCellStyle.BORDER_THIN);
+//        style.setAlignment(XSSFCellStyle.ALIGN_CENTER);
+// 生成一个字体
+//        HSSFFont font = workbook.createFont();
+//        font.setColor(XSSFColor.BLACK.index);
+//设置字体所在的行高度
+//        font.setFontHeightInPoints((short) 20);
+//        font.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
+// 把字体应用到当前的样式
+//        style.setFont(font);
+// 指定当单元格内容显示不下时自动换行
+//        style.setWrapText(true);
+// 产生表格标题行
+        HSSFRow row = sheet.createRow(0);
+        for (int i = 0; i < headers.length; i++) {
+            HSSFCell cell = row.createCell((short) i);
+//            cell.setCellStyle(style);
+            HSSFRichTextString text = new HSSFRichTextString(headers[i]);
+            cell.setCellValue(text.toString());
+        }
+// 第三步：遍历集合数据，产生数据行，开始插入数据
+        if (result != null) {
+            int index = 1;
+            for (List<String> m : result) {
+                row = sheet.createRow(index);
+                int cellIndex = 0;
+                for (String str : m) {
+                    HSSFCell cell = row.createCell((int) cellIndex);
+                    cell.setCellValue(str.toString());
+                    cellIndex++;
+                }
+                index++;
+            }
+        }
     }
 
 }

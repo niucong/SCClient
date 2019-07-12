@@ -23,7 +23,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.RadioButton;
@@ -41,9 +40,14 @@ import com.niucong.scclient.util.BluetoothChatService;
 import com.niucong.scclient.util.FileUtil;
 import com.niucong.scclient.util.NiftyDialogBuilder;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.litepal.LitePal;
 
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import okhttp3.RequestBody;
@@ -54,7 +58,6 @@ public class MainActivity extends BasicActivity
 
     private RecyclerView mRecyclerView;
     private TextView tv_total, nav_title, nav_total, nav_warn;// , nav_time
-    private CheckBox cb;
 
     private List<SellRecord> uRecords;
     private HomeAdapter mAdapter;
@@ -99,8 +102,6 @@ public class MainActivity extends BasicActivity
         setSearchBar(this, true);
         uRecords = new ArrayList<>();
 
-        cb = (CheckBox) findViewById(R.id.main_print);
-        cb.setVisibility(View.VISIBLE);
         tv_total = (TextView) findViewById(R.id.main_total);
         findViewById(R.id.main_btn).setOnClickListener(this);
         mRecyclerView.requestFocus();
@@ -154,14 +155,6 @@ public class MainActivity extends BasicActivity
         nav_title.setText(getText(R.string.app_name));
     }
 
-//    @Override
-//    public boolean onKeyDown(int keyCode, KeyEvent event) {
-//        if (keyCode == KeyEvent.KEYCODE_BACK) {
-//            return true;
-//        }
-//        return super.onKeyDown(keyCode, event);
-//    }
-
     @Override
     public void onClick(View v) {
         super.onClick(v);
@@ -174,15 +167,11 @@ public class MainActivity extends BasicActivity
     }
 
     private void sendOrder() {
-        if (cb.isChecked()) {
-            // TODO
-//            PrintUtil.printStick(mGpService, sRecords);
-            cb.setChecked(false);
-        }
+        // TODO
+//       PrintUtil.printStick(mGpService, sRecords);
         uRecords.clear();
         mAdapter.notifyDataSetChanged();
         tv_total.setText("合计：0.0");
-        App.app.showToast("结算成功");
     }
 
     @Override
@@ -254,49 +243,6 @@ public class MainActivity extends BasicActivity
 
             holder.tv_name.setText(sr.getName());
             holder.tv_factory.setText(sr.getFactory());
-
-//            holder.tv_price.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//
-//                    final NiftyDialogBuilder submitDia = NiftyDialogBuilder.getInstance(MainActivity.this);
-//                    final EditText et = new EditText(MainActivity.this);
-//                    et.setBackgroundResource(0);
-//                    et.setInputType(InputType.TYPE_NUMBER_FLAG_DECIMAL);
-//                    et.setGravity(Gravity.CENTER);
-//                    et.setText(App.app.showPrice(sr.getPrice()));
-//
-//                    submitDia.withTitle("调整价格");
-//                    submitDia.withButton1Text("取消", 0).setButton1Click(new View.OnClickListener() {
-//                        @Override
-//                        public void onClick(View v) {
-//                            submitDia.dismiss();
-//                        }
-//                    });
-//                    submitDia.withButton2Text("确定", 0).setButton2Click(new View.OnClickListener() {
-//                        @Override
-//                        public void onClick(View v) {
-//                            int price = App.app.savePrice(et.getText().toString());
-//                            if (price == 0) {
-//                                Snackbar.make(mRecyclerView, "价格输入有误", Snackbar.LENGTH_LONG)
-//                                        .setAction("Action", null).show();
-//                            } else {
-//                                sr.setPrice(price);
-//                                uRecords.remove(position);
-//                                uRecords.add(position, sr);
-//                                holder.tv_price.setText(App.app.showPrice(sr.getPrice()));
-//                                holder.tv_subPrice.setText("小计：" + App.app.showPrice(sr.getPrice() * sr.getNumber()));
-//                                getTotalPrice();
-//                                submitDia.dismiss();
-//                            }
-//                        }
-//                    });
-//                    submitDia.setCustomView(et, MainActivity.this);// "请选择查询日期"
-//                    submitDia.withMessage(null).withDuration(400);
-//                    submitDia.isCancelable(false);
-//                    submitDia.show();
-//                }
-//            });
 
             holder.iv_delete.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -381,25 +327,32 @@ public class MainActivity extends BasicActivity
             if (!FileUtil.setPermission(MainActivity.this, MainActivity.this, Manifest
                     .permission.READ_EXTERNAL_STORAGE, 1) || !FileUtil.setPermission(MainActivity.this, MainActivity.this, Manifest
                     .permission.WRITE_EXTERNAL_STORAGE, 1)) {
-                App.app.showToast("正在导出数据");
-//                new Thread() {
-//                    @Override
-//                    public void run() {
-//                        final boolean flag = new FileUtil().copyDBToSDcrad(MainActivity.this, SDCardPath);
-//                        runOnUiThread(new Runnable() {
-//                            @Override
-//                            public void run() {
-//                                if (flag) {
-//                                    Snackbar.make(mRecyclerView, "数据导出成功", Snackbar.LENGTH_LONG)
-//                                            .setAction("Action", null).show();
-//                                } else {
-//                                    Snackbar.make(mRecyclerView, "数据导出失败", Snackbar.LENGTH_LONG)
-//                                            .setAction("Action", null).show();
-//                                }
-//                            }
-//                        });
-//                    }
-//                }.start();
+                SimpleDateFormat YMDHM = new SimpleDateFormat("yyyyMMddHHmm");
+                final String path = FileUtil.getSdcardDir() + "/药品表_" + YMDHM.format(new Date()) + ".xls";
+                App.app.showToast("正在导出药品表……");
+                new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            saveExcel(path);
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    App.app.showToast("已导出到" + path);
+                                }
+                            });
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                            runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    App.app.showToast("导出失败");
+                                }
+                            });
+                        }
+                        super.run();
+                    }
+                }.start();
             }
         } else if (id == R.id.nav_printer) {// 连接打印机
 //            if (mGpService == null) {
@@ -426,6 +379,34 @@ public class MainActivity extends BasicActivity
             // TODO
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+
+    /**
+     * 导出数据
+     */
+    private void saveExcel(String path) throws Exception {
+//1、输出的文件地址及名称
+        OutputStream out = new FileOutputStream(path);
+//2、sheet表中的标题行内容，需要输入excel的汇总数据
+        String[] summary = {"条形码", "名称", "厂商", "价格"};
+        List<List<String>> summaryData = new ArrayList<List<String>>();
+        List<DrugInfoDB> dbs = LitePal.findAll(DrugInfoDB.class);
+        for (DrugInfoDB db : dbs) {
+            List<String> rowData = new ArrayList<String>();
+            rowData.add(db.getBarCode() + "");
+            rowData.add(db.getName());
+            rowData.add(db.getFactory());
+            rowData.add(App.app.showPrice(db.getPrice()));
+            summaryData.add(rowData);
+        }
+        HSSFWorkbook workbook = new HSSFWorkbook();
+//第一个表格内容
+        FileUtil.exportExcel(workbook, 0, "药品表", summary, summaryData);
+//第二个表格内容
+//            exportExcel(workbook, 1, "部分流水数据", water, waterData);
+//将所有的数据一起写入，然后再关闭输入流。
+        workbook.write(out);
+        out.close();
     }
 
     /**
