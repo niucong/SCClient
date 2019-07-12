@@ -152,7 +152,12 @@ public class MainActivity extends BasicActivity
     private void setNavTip() {
 //        nav_total.setText("今日销售额：" + app.showPrice(total));
 //        nav_warn.setText(warn + " 种需要进货");
-        nav_title.setText(getText(R.string.app_name));
+
+        if (App.app.share.getIntMessage("SC", "ConnetType", 0) == 1) {
+            nav_title.setText("Wifi连接 " + App.app.share.getStringMessage("SC", "IP", ""));
+        } else {
+            nav_title.setText("蓝牙连接 " + App.app.share.getStringMessage("SC", "MAC", ""));
+        }
     }
 
     @Override
@@ -596,6 +601,7 @@ public class MainActivity extends BasicActivity
                         App.app.share.saveIntMessage("SC", "ConnetType", 1);
                         App.app.showToast("已选择Wifi连接");
                     }
+                    setNavTip();
                     submitDia.dismiss();
                 } else {
                     if (!"admin".equals(ip)) {
