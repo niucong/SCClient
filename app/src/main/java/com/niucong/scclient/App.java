@@ -5,7 +5,7 @@ import android.widget.Toast;
 
 import com.facebook.stetho.Stetho;
 import com.niucong.scclient.db.DrugInfoDB;
-import com.niucong.scclient.util.AppSharedPreferences;
+import com.niucong.scclient.util.SharedPrefUtil;
 
 import org.litepal.LitePal;
 
@@ -15,7 +15,7 @@ import java.util.List;
 public class App extends Application {
 
     public static App app;
-    public AppSharedPreferences share;
+    public SharedPrefUtil share;
     public List<DrugInfoDB> list;
     public boolean refresh;
 
@@ -23,7 +23,7 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         app = this;
-        share = new AppSharedPreferences(this);
+        share = new SharedPrefUtil(this, "SC");
 
         LitePal.initialize(this);
         Stetho.initializeWithDefaults(this);

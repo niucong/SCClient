@@ -365,7 +365,7 @@ public abstract class BasicActivity extends AppCompatActivity implements View.On
     private CompositeSubscription mCompositeSubscription;
 
     public Api getApi() {
-        return ApiClient.getIstance().retrofit("http://" + App.app.share.getStringMessage("SC", "IP", "") + ":8080/sc/").create(Api.class);
+        return ApiClient.getIstance().retrofit("http://" + App.app.share.getString("IP", "") + ":8080/sc/").create(Api.class);
     }
 
     public void addSubscription(Observable observable, Subscriber subscriber) {

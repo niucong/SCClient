@@ -149,7 +149,6 @@ public class DrugActivity extends BasicActivity {
         if (di == null) {
             di = new DrugInfoDB();
         }
-
         try {
             di.setBarCode(Long.valueOf(str_code));
             di.setName(str_name);
@@ -177,11 +176,13 @@ public class DrugActivity extends BasicActivity {
         }
         di.saveOrUpdate();
         if (!flag) {
-            App.app.list.add(di);
+            App.app.list.clear();
+            App.app.list.addAll(LitePal.findAll(DrugInfoDB.class));
             setSearchBar(this, true);
             SearchAdapter searchAdapter = new SearchAdapter(this, App.app.list);
             et_name.setAdapter(searchAdapter);
         }
+        App.app.refresh = true;
         clearInput();
         et_search.requestFocus();
         App.app.showToast("入库成功");

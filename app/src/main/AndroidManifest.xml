@@ -32,6 +32,31 @@
         <activity android:name=".DrugActivity"/>
 
         <activity android:name="com.niucong.zbar.CaptureActivity"/>
+
+
+        <activity
+            android:name="com.niucong.printer.PrinterConnectDialog"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name="com.niucong.printer.BluetoothDeviceList"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name="com.niucong.printer.UsbDeviceList"
+            android:configChanges="orientation|keyboardHidden"/>
+        <activity
+            android:name="com.niucong.printer.PortConfigurationActivity"
+            android:configChanges="orientation|keyboardHidden"/>
+
+        <service
+            android:name="com.gprinter.service.GpPrintService"
+            android:enabled="true"
+            android:exported="true"
+            android:label="GpPrintService">
+            <intent-filter>
+                <action android:name="com.gprinter.aidl.GpPrintService"/>
+            </intent-filter>
+        </service>
+        <service android:name="com.gprinter.service.AllService"/>
     </application>
 
 </manifest>

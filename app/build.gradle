@@ -48,5 +48,6 @@ dependencies {
     implementation 'io.reactivex:rxandroid:1.2.1'
 
     implementation 'org.litepal.android:java:3.0.0'
+    implementation project(':printer')
     implementation project(':zbar')
 }
