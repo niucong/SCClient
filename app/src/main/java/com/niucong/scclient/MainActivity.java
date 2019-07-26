@@ -353,35 +353,8 @@ public class MainActivity extends BasicActivity
             synData(0);
         } else if (id == R.id.nav_data) {// 导出数据
             //6.0运行权限设置
-            if (!FileUtil.setPermission(MainActivity.this, MainActivity.this, Manifest
-                    .permission.READ_EXTERNAL_STORAGE, 1) || !FileUtil.setPermission(MainActivity.this, MainActivity.this, Manifest
-                    .permission.WRITE_EXTERNAL_STORAGE, 1)) {
-                SimpleDateFormat YMDHM = new SimpleDateFormat("yyyyMMddHHmm");
-                final String path = FileUtil.getSdcardDir() + "/药品表_" + YMDHM.format(new Date()) + ".xls";
-                App.app.showToast("正在导出药品表……");
-                new Thread() {
-                    @Override
-                    public void run() {
-                        try {
-                            saveExcel(path);
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    App.app.showToast("已导出到" + path);
-                                }
-                            });
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    App.app.showToast("导出失败");
-                                }
-                            });
-                        }
-                        super.run();
-                    }
-                }.start();
+            if (!FileUtil.setPermission(MainActivity.this, MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE, 2)) {
+                exportExcel();
             }
         } else if (id == R.id.nav_printer) {// 连接打印机
             if (mGpService == null) {
@@ -401,11 +374,40 @@ public class MainActivity extends BasicActivity
         return true;
     }
 
+    private void exportExcel() {
+        SimpleDateFormat YMDHM = new SimpleDateFormat("yyyyMMddHHmm");
+        final String path = FileUtil.getSdcardDir() + "/药品表_" + YMDHM.format(new Date()) + ".xls";
+        App.app.showToast("正在导出药品表……");
+        new Thread() {
+            @Override
+            public void run() {
+                try {
+                    saveExcel(path);
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            App.app.showToast("已导出到" + path);
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            App.app.showToast("导出失败");
+                        }
+                    });
+                }
+                super.run();
+            }
+        }.start();
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[]
             grantResults) {
-        if (requestCode == 1) {
-            // TODO
+        if (requestCode == 2) {
+            exportExcel();
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
