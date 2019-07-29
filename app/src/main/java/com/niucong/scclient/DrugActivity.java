@@ -1,7 +1,6 @@
 package com.niucong.scclient;
 
 import android.os.Bundle;
-import android.support.v7.widget.Toolbar;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -16,6 +15,8 @@ import com.niucong.scclient.db.DrugInfoDB;
 import com.niucong.scclient.util.CnToSpell;
 
 import org.litepal.LitePal;
+
+import androidx.appcompat.widget.Toolbar;
 
 //import com.umeng.analytics.MobclickAgent;
 
