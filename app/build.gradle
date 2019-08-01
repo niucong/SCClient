@@ -1,14 +1,19 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 29
     defaultConfig {
         applicationId "com.niucong.scclient"
         minSdkVersion 21
-        targetSdkVersion 28
+        targetSdkVersion 29
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        ndk {
+            abiFilters "armeabi-v7a"  // 指定要ndk需要兼容的架构(这样其他依赖包里mips,x86,armeabi,arm-v8之类的so会被过滤掉)
+        }
+
     }
     buildTypes {
         release {
@@ -59,4 +64,6 @@ dependencies {
     implementation 'org.litepal.android:java:3.0.0'
     implementation project(':printer')
     implementation project(':zbar')
+
+    implementation 'cn.bertsir.zbarLibary:zbarlibary:latest.release'
 }
