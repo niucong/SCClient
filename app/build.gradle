@@ -15,10 +15,32 @@ android {
         }
 
     }
+
+    signingConfigs {
+        release {
+            storeFile file('sc.jks')
+            storePassword "693623533"
+            keyAlias "sc"
+            keyPassword "693623533"
+        }
+        debug {
+            storeFile file('sc.jks')
+            storePassword "693623533"
+            keyAlias "sc"
+            keyPassword "693623533"
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            signingConfig signingConfigs.debug
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
