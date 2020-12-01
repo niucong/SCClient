@@ -32,6 +32,8 @@ import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+
+import cn.bertsir.zbar.Qr.ScanResult;
 import cn.bertsir.zbar.QrConfig;
 import cn.bertsir.zbar.QrManager;
 import rx.Observable;
@@ -323,12 +325,13 @@ public abstract class BasicActivity extends AppCompatActivity implements View.On
                         .create();
                 QrManager.getInstance().init(qrConfig).startScan(this, new QrManager.OnScanResultCallback() {
                     @Override
-                    public void onScanSuccess(String result) {
-                        Toast.makeText(getApplicationContext(), result, Toast.LENGTH_SHORT).show();
-                        if (searchDrug(result)) {
+                    public void onScanSuccess(ScanResult result) {
+                        Toast.makeText(getApplicationContext(), result.content, Toast.LENGTH_SHORT).show();
+                        if (searchDrug(result.content)) {
                             et_search.setText("");
                         }
                     }
+
                 });
                 break;
         }
