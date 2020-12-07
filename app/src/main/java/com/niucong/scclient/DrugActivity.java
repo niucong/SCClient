@@ -167,21 +167,12 @@ public class DrugActivity extends BasicActivity {
             return;
         }
 
-        boolean flag = false;
-        for (DrugInfoDB drugInfo : App.app.list) {
-            if (drugInfo.getBarCode() == di.getBarCode()) {
-                flag = true;
-                break;
-            }
-        }
         di.saveOrUpdate();
-        if (!flag) {
-            App.app.list.clear();
-            App.app.list.addAll(LitePal.findAll(DrugInfoDB.class));
-            setSearchBar(this, true);
-            SearchAdapter searchAdapter = new SearchAdapter(this, App.app.list);
-            et_name.setAdapter(searchAdapter);
-        }
+        App.app.list.clear();
+        App.app.list.addAll(LitePal.findAll(DrugInfoDB.class));
+        setSearchBar(this, true);
+        SearchAdapter searchAdapter = new SearchAdapter(this, App.app.list);
+        et_name.setAdapter(searchAdapter);
         App.app.refresh = true;
         clearInput();
         et_search.requestFocus();

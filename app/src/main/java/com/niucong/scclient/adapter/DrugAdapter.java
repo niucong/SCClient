@@ -69,7 +69,7 @@ public class DrugAdapter extends RecyclerView.Adapter<DrugAdapter.MyViewHolder> 
             @Override
             public boolean onLongClick(View v) {
                 ((Activity) context).startActivityForResult(new Intent(context, DrugActivity.class)
-                        .putExtra("DrugInfoDB", sl), 1);
+                        .putExtra("BarCode", sl.getBarCode()), 1);
                 return false;
             }
         });
