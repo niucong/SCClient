@@ -36,8 +36,11 @@ public class DrugListActivity extends BasicActivity {
         setSearchBar(this, true);
 
         mRecyclerView = (RecyclerView) findViewById(R.id.drug_rv);
-
         setData();
+    }
+
+    private void setData() {
+        mDatas = LitePal.findAll(DrugInfoDB.class);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.setAdapter(mAdapter = new DrugAdapter(this, mDatas));
         mRecyclerView.addItemDecoration(new DividerItemDecoration(this,
@@ -45,15 +48,10 @@ public class DrugListActivity extends BasicActivity {
         mRecyclerView.requestFocus();
     }
 
-    private void setData() {
-        mDatas = LitePal.findAll(DrugInfoDB.class);
-    }
-
     @Override
-    protected void onRestart() {
-        super.onRestart();
-        if (mAdapter.isRefersh) {
-            mAdapter.isRefersh = false;
+    protected void onStart() {
+        super.onStart();
+        if (App.app.refresh) {
             setData();
             mAdapter.notifyDataSetChanged();
         }

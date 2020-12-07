@@ -167,7 +167,8 @@ public class DrugActivity extends BasicActivity {
             return;
         }
 
-        di.saveOrUpdate();
+        di.save();
+
         App.app.list.clear();
         App.app.list.addAll(LitePal.findAll(DrugInfoDB.class));
         setSearchBar(this, true);

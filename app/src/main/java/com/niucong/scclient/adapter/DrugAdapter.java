@@ -29,8 +29,6 @@ public class DrugAdapter extends RecyclerView.Adapter<DrugAdapter.MyViewHolder> 
     private int defItem = -1;
     private OnItemListener onItemListener;
 
-    public boolean isRefersh;
-
     public DrugAdapter(Context context, List<DrugInfoDB> sls) {
         this.context = context;
         this.sls = sls;
